@@ -67,6 +67,7 @@ func (menu *Menu) Display() {
 		defer close(inpChan)
 
 		inpCh := make([]byte, 1)
+		var inpBuffer []byte
 
 		for {
 			select {
@@ -79,7 +80,34 @@ func (menu *Menu) Display() {
 					close(inpChan)
 				}
 				if n > 0 {
-					inpChan <- inpCh[0]
+					inpBuffer = append(inpBuffer, inpCh[0])
+					if len(inpBuffer) >= 3 {
+						// Check for escape sequences
+						if inpBuffer[0] == 27 && inpBuffer[1] == 91 { // ESC [
+							switch inpBuffer[2] {
+							case 'A':
+								inpChan <- 'u' // Up arrow
+								inpBuffer = inpBuffer[:0]
+							case 'B':
+								inpChan <- 'd' // Down arrow
+								inpBuffer = inpBuffer[:0]
+							case 'C':
+								inpChan <- 'r' // right arrow
+								inpBuffer = inpBuffer[:0]
+							case 'D':
+								inpChan <- 'l' // left arrow
+								inpBuffer = inpBuffer[:0]
+							default:
+								inpBuffer = inpBuffer[1:]
+							}
+						} else {
+							// Send non-escape sequence characters to the channel
+							for _, b := range inpBuffer {
+								inpChan <- b
+							}
+							inpBuffer = inpBuffer[:0]
+						}
+					}
 				}
 			}
 		}
@@ -88,7 +116,6 @@ func (menu *Menu) Display() {
 	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
 
-	bs := make([]byte, 3)
 mainLoop:
 	for {
 		select {
@@ -102,27 +129,19 @@ mainLoop:
 			case 127: //backspace
 			case 23:
 			case 32: //space
-			case 27:
-				bs[0] = 27
-			case 91:
-				bs[1] = 91
-			case 65:
-				if bs[0] == 27 && bs[1] == 91 {
-					// fmt.Println("up")
-					currentItem--
-
-					bs[0] = 0
-					bs[1] = 0
-
-				}
-			case 66:
-
+			case 'u':
+				currentItem--
+			case 'd':
 				currentItem++
-				// fmt.Println("down")
-				if bs[0] == 27 && bs[1] == 91 {
-
-					bs[0] = 0
-					bs[1] = 0
+			case 'l':
+				if head.parent != nil {
+					head = head.parent
+					currentItem = 0
+				}
+			case 'r':
+				if len(head.childrens) > 0 {
+					head = head.childrens[currentItem]
+					currentItem = 0
 				}
 			default:
 			}
@@ -146,10 +165,30 @@ var Yellow = "\033[33m"
 
 var reset = "\033[0m"
 
+func getActiveItem(length int) int {
+	if currentItem >= 0 {
+		return int(math.Abs(float64(currentItem % length)))
+	} else {
+		currentItem = length - 1
+	}
+	return currentItem
+}
+func cyclicAccess(arrayLength int) int {
+	currentIndex := currentItem
+	// Handle negative or out-of-bounds index
+	if currentIndex < 0 {
+		currentIndex = (currentIndex + arrayLength) % arrayLength
+	} else if currentIndex >= arrayLength {
+		currentIndex = currentIndex % arrayLength
+	}
+	// Access the element using the adjusted index
+	return currentIndex
+}
+
 func getListItems(head *Node, buffer *bytes.Buffer) {
 
 	for index, item := range head.childrens {
-		if index == int(math.Abs(float64(currentItem%len(head.childrens)))) {
+		if index == getActiveItem(len(head.childrens)) {
 			buffer.WriteString(Yellow)
 			buffer.WriteString(fmt.Sprintf("> "))
 
