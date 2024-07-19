@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/rishavmngo/menu-cli/models"
 	"golang.org/x/term"
 )
 
@@ -23,27 +23,11 @@ type Menu struct {
 	Main *Node
 }
 
-var currentItem = 0
-
-func (menu *Menu) Test() {
-
-	fmt.Println(menu.Main.name)
-
-	for _, item := range menu.Main.childrens {
-		fmt.Println("\t" + item.name + "\t\t" + item.parent.name)
-
-		for _, ineerItem := range item.childrens {
-			fmt.Println("\t\t" + ineerItem.name + "\t\t" + ineerItem.parent.name)
-			for _, superInnerItem := range ineerItem.childrens {
-				fmt.Println("\t\t\t" + superInnerItem.name + "\t\t" + superInnerItem.parent.name)
-			}
-		}
-	}
-
-}
 func (menu *Menu) Display() {
 	head := menu.Main
 	var buffer bytes.Buffer
+
+	var currentItem = models.Get()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -97,9 +81,9 @@ func (menu *Menu) Display() {
 						case 'B':
 							inpChan <- 'd' // Down arrow
 						case 'C':
-							inpChan <- 'r' // right arrow
+							inpChan <- '>' // right arrow
 						case 'D':
-							inpChan <- 'l' // left arrow
+							inpChan <- '<' // left arrow
 						}
 						inpBuffer = inpBuffer[:0]
 					} else {
@@ -119,32 +103,37 @@ mainLoop:
 		case inp := <-inpChan:
 			switch inp {
 			case '\n', 13:
-				expand(&head)
+				expand(&head, currentItem)
 			case 3:
 				cancel()
 				break mainLoop
 			case 127: //backspace
 			case 23:
 			case 32: //space
+			case 'j':
+				currentItem.Increment()
+			case 'k':
+				currentItem.Decrement()
 			case 'u':
-				currentItem--
+				currentItem.Decrement()
 			case 'd':
-				currentItem++
+				currentItem.Increment()
+			case '<':
+				collapse(&head, currentItem)
 			case 'l':
-				if canCollapse(head) {
-					head = head.parent
-					currentItem = 0
-				}
-			case 'r':
-				expand(&head)
+				expand(&head, currentItem)
+			case 'h':
+				collapse(&head, currentItem)
+			case '>':
+				expand(&head, currentItem)
 			default:
 			}
 
 		case <-ui.C:
 
 			ClearScreenStandalone()
-			headingOfList(head, &buffer)
-			getListItems(head, &buffer)
+			headingOfList(head, &buffer, currentItem)
+			getListItems(head, &buffer, currentItem)
 
 			_, err := buffer.WriteTo(os.Stdout)
 
@@ -156,46 +145,8 @@ mainLoop:
 
 }
 
-var Yellow = "\033[33m"
-
-var reset = "\033[0m"
-var bold = "\033[1m"
-
-func headingOfList(head *Node, buffer *bytes.Buffer) {
-
-	buffer.WriteString(bold)
-	buffer.WriteString(fmt.Sprintf("%s(%d)\r\n", head.name, getActiveItemIndex(len(head.childrens))))
-	buffer.WriteString(reset)
-}
-
-func getActiveItemIndex(length int) int {
-	if currentItem >= 0 {
-		return int(math.Abs(float64(currentItem % length)))
-	} else {
-		currentItem = length - 1
-	}
-	return currentItem
-}
-
-func getListItems(head *Node, buffer *bytes.Buffer) {
-
-	for index, item := range head.childrens {
-		if index == getActiveItemIndex(len(head.childrens)) {
-			buffer.WriteString(Yellow)
-			buffer.WriteString(fmt.Sprintf("> "))
-
-		} else {
-			buffer.WriteString("  ")
-		}
-		buffer.WriteString(fmt.Sprintf("%s\r\n", item.name))
-		buffer.WriteString(reset)
-	}
-
-}
-
 func NewMenu(name string) *Menu {
 
-	// menu := &Menu{Main: &Node{Name: name, FirstChild: nil, NextSibiling: nil}}
 	head := &Node{name: name}
 
 	return &Menu{Main: head}
@@ -209,33 +160,4 @@ func (node *Node) Add(name string) *Node {
 	node.childrens = append(node.childrens, newNode)
 	return newNode
 
-}
-func expand(head **Node) {
-
-	if canExpand(*head) {
-		*head = (*head).childrens[getActiveItemIndex(len((*head).childrens))]
-		currentItem = 0
-	}
-}
-
-func canExpand(head *Node) bool {
-
-	if len(head.childrens[getActiveItemIndex(len(head.childrens))].childrens) > 0 {
-		return true
-	}
-	return false
-}
-func canCollapse(head *Node) bool {
-
-	if head.parent != nil {
-		return true
-	}
-	return false
-
-}
-
-func ClearScreenStandalone() {
-
-	fmt.Print("\033[2J") // Clear the screen
-	fmt.Print("\033[H")  // Move the cursor to the top-left corner
 }
