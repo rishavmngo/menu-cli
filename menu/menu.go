@@ -75,39 +75,35 @@ func (menu *Menu) Display() {
 				return
 			default:
 				n, err := os.Stdin.Read(inpCh)
-				fmt.Println(inpCh[0])
 				if err != nil {
 					fmt.Println("Error reading input:", err)
 					close(inpChan)
 				}
 				if n > 0 {
-					inpBuffer = append(inpBuffer, inpCh[0])
-					if len(inpBuffer) >= 3 {
+					if inpCh[0] == 27 { // ESC
+						inpBuffer = append(inpBuffer, inpCh[0])
+						continue
+					}
+					if len(inpBuffer) == 1 && inpCh[0] == 91 { // ESC [
+						inpBuffer = append(inpBuffer, inpCh[0])
+						continue
+					}
+					if len(inpBuffer) == 2 {
 						// Check for escape sequences
-						if inpBuffer[0] == 27 && inpBuffer[1] == 91 { // ESC [
-							switch inpBuffer[2] {
-							case 'A':
-								inpChan <- 'u' // Up arrow
-								inpBuffer = inpBuffer[:0]
-							case 'B':
-								inpChan <- 'd' // Down arrow
-								inpBuffer = inpBuffer[:0]
-							case 'C':
-								inpChan <- 'r' // right arrow
-								inpBuffer = inpBuffer[:0]
-							case 'D':
-								inpChan <- 'l' // left arrow
-								inpBuffer = inpBuffer[:0]
-							default:
-								inpBuffer = inpBuffer[1:]
-							}
-						} else {
-							// Send non-escape sequence characters to the channel
-							for _, b := range inpBuffer {
-								inpChan <- b
-							}
-							inpBuffer = inpBuffer[:0]
+						inpBuffer = append(inpBuffer, inpCh[0])
+						switch inpBuffer[2] {
+						case 'A':
+							inpChan <- 'u' // Up arrow
+						case 'B':
+							inpChan <- 'd' // Down arrow
+						case 'C':
+							inpChan <- 'r' // right arrow
+						case 'D':
+							inpChan <- 'l' // left arrow
 						}
+						inpBuffer = inpBuffer[:0]
+					} else {
+						inpChan <- inpCh[0]
 					}
 				}
 			}
@@ -123,8 +119,6 @@ mainLoop:
 		case inp := <-inpChan:
 			switch inp {
 			case '\n', 13:
-				// buffer.WriteString(fmt.Sprintf("%d\r\n", currentItem))
-				fmt.Println("final 13")
 				if canExpand(head) {
 					head = head.childrens[currentItem]
 					currentItem = 0
