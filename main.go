@@ -22,22 +22,4 @@ func main() {
 	Duration.Add("120")
 
 	menu.Display()
-	// menu.Test()
-
-	// mainMenu.addItem("Play")
-	// settings := mainMenu.addItem("Settings")
-	// mainMenu.addItem("Exit")
-	//
-	//  mode := settings.addItem("mode")
-	//  mode.addItem("easy")
-	//  mode.addItem("paragraph")
-	//  mode.addItem("advance")
-	//
-	//  duration:= settings.addItem("duration")
-	//
-	//  duration.addItem("10")
-	//  duration.addItem("20")
-	//  duration.addItem("30")
-	//  duration.addItem("50")
-
 }

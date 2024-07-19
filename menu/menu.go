@@ -75,6 +75,7 @@ func (menu *Menu) Display() {
 				return
 			default:
 				n, err := os.Stdin.Read(inpCh)
+				fmt.Println(inpCh[0])
 				if err != nil {
 					fmt.Println("Error reading input:", err)
 					close(inpChan)
@@ -121,8 +122,14 @@ mainLoop:
 		select {
 		case inp := <-inpChan:
 			switch inp {
-			case '\n':
-			case '\r':
+			case '\n', 13:
+				// buffer.WriteString(fmt.Sprintf("%d\r\n", currentItem))
+				fmt.Println("final 13")
+				if canExpand(head) {
+					head = head.childrens[currentItem]
+					currentItem = 0
+				}
+				break
 			case 3:
 				cancel()
 				break mainLoop
@@ -134,12 +141,12 @@ mainLoop:
 			case 'd':
 				currentItem++
 			case 'l':
-				if head.parent != nil {
+				if canCollapse(head) {
 					head = head.parent
 					currentItem = 0
 				}
 			case 'r':
-				if len(head.childrens) > 0 {
+				if canExpand(head) {
 					head = head.childrens[currentItem]
 					currentItem = 0
 				}
@@ -173,17 +180,6 @@ func getActiveItem(length int) int {
 	}
 	return currentItem
 }
-func cyclicAccess(arrayLength int) int {
-	currentIndex := currentItem
-	// Handle negative or out-of-bounds index
-	if currentIndex < 0 {
-		currentIndex = (currentIndex + arrayLength) % arrayLength
-	} else if currentIndex >= arrayLength {
-		currentIndex = currentIndex % arrayLength
-	}
-	// Access the element using the adjusted index
-	return currentIndex
-}
 
 func getListItems(head *Node, buffer *bytes.Buffer) {
 
@@ -216,6 +212,22 @@ func (node *Node) Add(name string) *Node {
 	newNode.parent = node
 	node.childrens = append(node.childrens, newNode)
 	return newNode
+
+}
+
+func canExpand(head *Node) bool {
+
+	if len(head.childrens[currentItem].childrens) > 0 {
+		return true
+	}
+	return false
+}
+func canCollapse(head *Node) bool {
+
+	if head.parent != nil {
+		return true
+	}
+	return false
 
 }
 
