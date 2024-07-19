@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/rishavmngo/menu-cli/models"
+	"github.com/rishavmngo/menu-go/models"
 )
 
 func expand(head **Node, currentItem *models.CurrentItem) {

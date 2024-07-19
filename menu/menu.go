@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/rishavmngo/menu-go/models"
+	"golang.org/x/term"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/rishavmngo/menu-cli/models"
-	"golang.org/x/term"
 )
 
 type Node struct {

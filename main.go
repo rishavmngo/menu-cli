@@ -1,6 +1,6 @@
 package main
 
-import m "github.com/rishavmngo/menu-cli/menu"
+import m "github.com/rishavmngo/menu-go/menu"
 
 func main() {
 

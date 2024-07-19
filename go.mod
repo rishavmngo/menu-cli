@@ -1,4 +1,4 @@
-module github.com/rishavmngo/menu-cli
+module github.com/rishavmngo/menu-go
 
 go 1.22.5
 
