@@ -16,10 +16,22 @@ type Node struct {
 	name      string
 	parent    *Node
 	childrens []*Node
+	action    func()
 }
 
 type Menu struct {
-	Main *Node
+	Main    *Node
+	running bool
+}
+
+func (menu *Menu) IsRunning() bool {
+	return menu.running
+}
+
+func (menu *Menu) Exit() {
+
+	menu.running = false
+
 }
 
 func (menu *Menu) Display() {
@@ -97,7 +109,7 @@ func (menu *Menu) Display() {
 	defer ui.Stop()
 
 mainLoop:
-	for {
+	for menu.running {
 		select {
 		case inp := <-inpChan:
 			switch inp {
@@ -148,14 +160,15 @@ func NewMenu(name string) *Menu {
 
 	head := &Node{name: name}
 
-	return &Menu{Main: head}
+	return &Menu{Main: head, running: true}
 
 }
 
-func (node *Node) Add(name string) *Node {
+func (node *Node) Add(name string, action func()) *Node {
 
 	newNode := &Node{name: name}
 	newNode.parent = node
+	newNode.action = action
 	node.childrens = append(node.childrens, newNode)
 	return newNode
 

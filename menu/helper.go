@@ -13,6 +13,11 @@ func expand(head **Node, currentItem *models.CurrentItem) {
 	if canExpand(*head, currentItem) {
 		*head = (*head).childrens[getActiveItemIndex(len((*head).childrens), currentItem)]
 		currentItem.Reset()
+	} else {
+		if (*head).childrens[getActiveItemIndex(len((*head).childrens), currentItem)].action != nil {
+
+			(*head).childrens[getActiveItemIndex(len((*head).childrens), currentItem)].action()
+		}
 	}
 }
 func canExpand(head *Node, currentItem *models.CurrentItem) bool {
