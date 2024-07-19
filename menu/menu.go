@@ -110,8 +110,8 @@ func (menu *Menu) Display() {
 		}
 
 	}()
-	ticker := time.NewTicker(50 * time.Millisecond)
-	defer ticker.Stop()
+	ui := time.NewTicker(50 * time.Millisecond)
+	defer ui.Stop()
 
 mainLoop:
 	for {
@@ -119,11 +119,7 @@ mainLoop:
 		case inp := <-inpChan:
 			switch inp {
 			case '\n', 13:
-				if canExpand(head) {
-					head = head.childrens[currentItem]
-					currentItem = 0
-				}
-				break
+				expand(&head)
 			case 3:
 				cancel()
 				break mainLoop
@@ -140,16 +136,14 @@ mainLoop:
 					currentItem = 0
 				}
 			case 'r':
-				if canExpand(head) {
-					head = head.childrens[currentItem]
-					currentItem = 0
-				}
+				expand(&head)
 			default:
 			}
 
-		case <-ticker.C:
+		case <-ui.C:
 
 			ClearScreenStandalone()
+			headingOfList(head, &buffer)
 			getListItems(head, &buffer)
 
 			_, err := buffer.WriteTo(os.Stdout)
@@ -165,8 +159,16 @@ mainLoop:
 var Yellow = "\033[33m"
 
 var reset = "\033[0m"
+var bold = "\033[1m"
 
-func getActiveItem(length int) int {
+func headingOfList(head *Node, buffer *bytes.Buffer) {
+
+	buffer.WriteString(bold)
+	buffer.WriteString(fmt.Sprintf("%s(%d)\r\n", head.name, getActiveItemIndex(len(head.childrens))))
+	buffer.WriteString(reset)
+}
+
+func getActiveItemIndex(length int) int {
 	if currentItem >= 0 {
 		return int(math.Abs(float64(currentItem % length)))
 	} else {
@@ -178,7 +180,7 @@ func getActiveItem(length int) int {
 func getListItems(head *Node, buffer *bytes.Buffer) {
 
 	for index, item := range head.childrens {
-		if index == getActiveItem(len(head.childrens)) {
+		if index == getActiveItemIndex(len(head.childrens)) {
 			buffer.WriteString(Yellow)
 			buffer.WriteString(fmt.Sprintf("> "))
 
@@ -208,10 +210,17 @@ func (node *Node) Add(name string) *Node {
 	return newNode
 
 }
+func expand(head **Node) {
+
+	if canExpand(*head) {
+		*head = (*head).childrens[getActiveItemIndex(len((*head).childrens))]
+		currentItem = 0
+	}
+}
 
 func canExpand(head *Node) bool {
 
-	if len(head.childrens[currentItem].childrens) > 0 {
+	if len(head.childrens[getActiveItemIndex(len(head.childrens))].childrens) > 0 {
 		return true
 	}
 	return false

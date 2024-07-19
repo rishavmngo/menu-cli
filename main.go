@@ -5,6 +5,7 @@ import m "github.com/rishavmngo/menu-cli/menu"
 func main() {
 
 	menu := m.NewMenu("Main Menu")
+
 	menu.Main.Add("Play")
 	settings := menu.Main.Add("Settings")
 	menu.Main.Add("Exit")
